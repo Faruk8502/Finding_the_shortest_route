@@ -13,31 +13,30 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.TextBox;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.ToolBar;
 using static Finding_the_shortest_route.Find_way_algorithm;
+using static Finding_the_shortest_route.Additional_functions;
 
 namespace Finding_the_shortest_route
 {
-    public partial class Form1 : Form
+    public partial class Window : Form
     {
         // Глобальные переменные 
         int score = 0;
-        Point point1 = new Point(-1, -1);
-        Point point2 = new Point(-1, -1);
+        Point point1 = new Point();
+        Point point2 = new Point();
         List<Point> obstacles = new List<Point>();
         List<Point> way = new List<Point>();
 
         // Модуль инициализации
-        public Form1()
+        public Window()
         {
             InitializeComponent();
+            this.DoubleBuffered = true;
             Clear_Data();
-            this.ClientSize = new Size(800, 700);
+            this.ClientSize = new Size(625, 625);
 
-            SquareGrid.Width = 500;
-            SquareGrid.Height = 500;
-            SquareGrid.Anchor = AnchorStyles.Top | AnchorStyles.Left;
-
-
+            // Устанавливаем предел ползунков в минус, дабы скрыть точки
             NumUpDwn_p1_x.Minimum = -1;
             NumUpDwn_p1_y.Minimum = -1;
             NumUpDwn_p2_x.Minimum = -1;
@@ -59,16 +58,30 @@ namespace Finding_the_shortest_route
                 widthOfSpinButtons, NumUpDwn_p2_y.Controls[0].MinimumSize.Height);
 
             // Настройка интерфейса
-            panel1.Dock = DockStyle.Top;
-            panel2.Dock = DockStyle.Fill;
-            panel1.Width = this.ClientSize.Width;
-            panel1.Height = (int)(2.25 * this.ClientSize.Height / 3);
-            panel2.Dock = DockStyle.Bottom;
-            panel2.Dock = DockStyle.Fill;
-            panel2.Width = this.ClientSize.Width;
-            panel2.Height = (int)(0.75 * this.ClientSize.Height / 3);
-        }
+            TableLayoutPanel tableLayoutPanel1 = new TableLayoutPanel();
+            tableLayoutPanel1.Dock = DockStyle.Fill;
+            tableLayoutPanel1.ColumnCount = 2;
+            tableLayoutPanel1.RowCount = 2;
+            tableLayoutPanel1.AutoSize = true;
+            tableLayoutPanel1.AutoSizeMode = AutoSizeMode.GrowAndShrink;
 
+            this.Controls.Add(tableLayoutPanel1);
+
+            SquareGrid.Width = 500;
+            SquareGrid.Height = 500;
+            SquareGrid.Anchor = AnchorStyles.Top | AnchorStyles.Left;
+            SquareGrid.Dock = DockStyle.Fill;
+            tableLayoutPanel1.Controls.Add(SquareGrid, 0, 0);
+
+            panel2.Dock = DockStyle.Fill;
+            tableLayoutPanel1.Controls.Add(panel2, 0, 1);
+            tableLayoutPanel1.SetColumnSpan(panel2, 2);
+
+            panel3.Dock = DockStyle.Fill;
+            tableLayoutPanel1.Controls.Add(panel3, 1, 0);
+
+        }
+        //______________________________________________________________________________________________________
         // Модуль обновления сетки
         public void Grid_update()
         {
@@ -93,7 +106,7 @@ namespace Finding_the_shortest_route
                 g.DrawLine(pen, 0, param, GridSize * cellSize, param);
             }
 
-            Brush brush = new SolidBrush(Color.Red); // Используем красный цвет для препятствий
+            Brush brush = new SolidBrush(Color.Red); // красный цвет для препятствий
 
             foreach (var obstacle in obstacles)
             {
@@ -102,7 +115,7 @@ namespace Finding_the_shortest_route
                 g.FillRectangle(brush, x + 1, y + 1, cellSize, cellSize);
             }
 
-            brush = new SolidBrush(Color.Yellow); // Используем жёлтый цвет для найденного пути
+            brush = new SolidBrush(Color.Yellow); // жёлтый цвет для найденного пути
             foreach (var cell in way)
             {
                 float x = cell.X * cellSize;
@@ -140,6 +153,7 @@ namespace Finding_the_shortest_route
             }
             Grid_update();
         }
+        // Обработчик нажатия на клавиши со стрелками (джойстик)
         private void Btn_Click(object sender, EventArgs e)
         {
             System.Windows.Forms.Button button = sender as System.Windows.Forms.Button;
@@ -159,54 +173,30 @@ namespace Finding_the_shortest_route
                 }
 
             }
+            // Определяем какая клавиша джойстика нажата и корректируем перемещение с учётом препятствий
             switch (button.Name)
             {
                 case string s when s.Contains("Up"):
                     numericUpDown2.Value -= numericUpDown2.Value != numericUpDown2.Minimum? 
-                        Step_correct(tag, "Y", "-", 0) : 0;
+                        Step_correct(tag, "Y", "-", 0, point1, point2, obstacles) : 0;
                     break;
                 case string s when s.Contains("Down"):
                     numericUpDown2.Value += numericUpDown2.Value != numericUpDown2.Maximum?
-                        Step_correct(tag, "Y", "+", (int)numericUpDown2.Maximum) : 0;
+                        Step_correct(tag, "Y", "+", 
+                        (int)numericUpDown2.Maximum, point1, point2, obstacles) : 0;
                     break;
                 case string s when s.Contains("Left"):
                     numericUpDown1.Value -= numericUpDown1.Value != numericUpDown2.Minimum?
-                        Step_correct(tag, "X", "-", 0) : 0;
+                        Step_correct(tag, "X", "-", 0, point1, point2, obstacles) : 0;
                     break;
                 case string s when s.Contains("Right"):
                     numericUpDown1.Value += numericUpDown1.Value != numericUpDown2.Maximum?
-                        Step_correct(tag, "X", "+", (int)numericUpDown1.Maximum) : 0;
+                        Step_correct(tag, "X", "+", 
+                        (int)numericUpDown1.Maximum, point1, point2, obstacles) : 0;
                     break;
             }
         }
-        private int Step_correct(int tag, string coordinate, string sign, int limit)
-        {
-            int additional = 1;
-            Point point_clone = tag == 0 ? point1 : point2;
-            if (coordinate == "Y")
-            {
-                Point potential_point = sign == "+" ? new Point(point_clone.X, point_clone.Y + additional) :
-                    new Point(point_clone.X, point_clone.Y - additional);
-                int max = sign == "+" ? limit - point_clone.Y: point_clone.Y;
-                while (obstacles.Any(p => p == potential_point))
-                {
-                    additional += additional < max & max > 0? 1 : -additional;
-                    potential_point.Y += sign == "+" ? 1 : -1;
-                }
-            }
-            else
-            {
-                Point potential_point = sign == "+" ? new Point(point_clone.X + additional, point_clone.Y) :
-                    new Point(point_clone.X - additional, point_clone.Y);
-                int max = sign == "+" ? limit - point_clone.X: point_clone.X;
-                while (obstacles.Any(p => p == potential_point))
-                {
-                    additional += additional < max & max > 0 ? 1 : -additional;
-                    potential_point.X += sign == "+" ? 1 : -1;
-                }
-            }
-            return additional;
-        }
+        // Обработчик изменения значений координат в полях
         private void NumUpDwn_ValueChanged(object sender, EventArgs e)
         {
             NumericUpDown numericUpDown1 = (NumericUpDown)sender;
@@ -234,15 +224,12 @@ namespace Finding_the_shortest_route
                 point2 = Point_synchronization(point2, location1, location2, value1, value2);
             }
             Label_result.Text = null;
+            // Сбрасываем найденный путь
             way.Clear();
+            // Обновляем сетку
             Grid_update();
         }
-        private Point Point_synchronization(Point point, int loc1,int loc2, int val1, int val2)
-        {
-            point.X = loc1 < loc2 ? val1 : val2;
-            point.Y = loc1 < loc2 ? val2 : val1;
-            return point;
-        }
+        // Обработчик нажатия Enter при вводе координат в соответствующих полях
         private void NumUpDwn_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyCode != Keys.Enter)
@@ -251,37 +238,38 @@ namespace Finding_the_shortest_route
             }
             else
             {
+                // Остановка дальнейшей обработки события нажатия с целью предотвращения звукого сопровождения
                 e.SuppressKeyPress = true;
+
+                // Определяем в какое поле пользователь ввёл значение координаты,
+                // чтобы перевести фокус на другое поле
                 NumericUpDown numericUpDown1 = (NumericUpDown)sender;
+                NumericUpDown numericUpDown2 = new NumericUpDown();
+                Control parent = numericUpDown1.Parent;
                 if (numericUpDown1.Value != -1)
                 {
-                    Change_focus(sender, numericUpDown1);
-                }
-            }
-        }
-        public void Change_focus(object sender, NumericUpDown numericUpDown1)
-        {
-            NumericUpDown numericUpDown2 = new NumericUpDown();
-            Control parent = numericUpDown1.Parent;
-            foreach (Control control in parent.Controls)
-            {
-                if (control != numericUpDown1 & control is NumericUpDown)
-                {
-                    numericUpDown2 = control as NumericUpDown;
-                }
+                    foreach (Control control in parent.Controls)
+                    {
+                        if (control != numericUpDown1 & control is NumericUpDown)
+                        {
+                            numericUpDown2 = control as NumericUpDown;
+                        }
 
-            }
-            if (Convert.ToInt16(numericUpDown2.Tag) > 0)
-            {
-                numericUpDown2.Tag = "0";
-                this.ActiveControl = null;
-            }
-            else
-            {
-                numericUpDown1.Tag = "1";
-                numericUpDown2.Focus();
+                    }
+                    if (Convert.ToInt16(numericUpDown2.Tag) > 0)
+                    {
+                        numericUpDown2.Tag = "0";
+                        this.ActiveControl = null;
+                    }
+                    else
+                    {
+                        numericUpDown1.Tag = "1";
+                        numericUpDown2.Focus();
+                    }
+                }
             }
         }
+        // Модуль для отрисовки препятствий
         public void DrawObstacles(object sender, EventArgs e)
         {
             way.Clear();
@@ -304,6 +292,7 @@ namespace Finding_the_shortest_route
                 }
             }
             Label_result.Text = null;
+            // Обновляем сетку
             Grid_update();
         }
         private void Find_way_Button_Click(object sender, EventArgs e)
@@ -318,27 +307,37 @@ namespace Finding_the_shortest_route
         {
             Clear_Data();
         }
+        // Модуль для очистки поля
         private void Clear_Data()
         {
             obstacles.Clear();
             way.Clear();
-            point1.X = -1;
-            point1.Y = -1;
-            point2.X = -1;
-            point2.Y = -1;
+
+            NumUpDwn_p1_x.Minimum = -1;
+            NumUpDwn_p1_y.Minimum = -1;
+            NumUpDwn_p2_x.Minimum = -1;
+            NumUpDwn_p2_y.Minimum = -1;
+
+            // Устанавливаем отрицательные значения координат, дабы скрыть точки
             NumUpDwn_p1_x.Value = -1;
             NumUpDwn_p1_y.Value = -1;
             NumUpDwn_p2_x.Value = -1;
             NumUpDwn_p2_y.Value = -1;
+
             NumUpDwn_ObsNum.Value = 0;
             Label_result.Text = null;
+
+            // Обновляем сетку
             Grid_update();
+            // Устанавливаем соответствующую этапу работы программы кондицию
             Points_manegment_lock(3);
         }
+        // Модуль для перехода в разные этапы работы программы
         private void Points_manegment_lock(int cond)
         {
             if (cond == 1)
             {
+                // Данная кондиция соответствует добавлению первой точки
                 Btn_Up_1.Visible = true;
                 Btn_Down_1.Visible = true;
                 Btn_Left_1.Visible = true;
@@ -355,10 +354,12 @@ namespace Finding_the_shortest_route
                 point1.X = 0;
                 NumUpDwn_p1_y.Value = 0;
                 point1.Y = 0;
+                obstacles.Clear();
                 Grid_update();
             }
             else if(cond == 2)
             {
+                // Данная кондиция соответствует добавлению второй точки
                 Btn_Up_2.Visible = true;
                 Btn_Down_2.Visible = true;
                 Btn_Left_2.Visible = true;
@@ -371,14 +372,16 @@ namespace Finding_the_shortest_route
                 NumUpDwn_p2_x.Minimum = 0;
                 NumUpDwn_p2_y.Minimum = 0;
                 Btn_p2_lock.Visible=false;
-                NumUpDwn_p2_x.Value = 0;
-                point2.X = 0;
-                NumUpDwn_p2_y.Value = 0;
-                point2.Y = 0;
+                NumUpDwn_p2_x.Value = (int)NumUpDwn_p2_x.Maximum;
+                point2.X = (int)NumUpDwn_p2_x.Maximum;
+                NumUpDwn_p2_y.Value = (int)NumUpDwn_p2_x.Maximum;
+                point2.Y = (int)NumUpDwn_p2_y.Maximum;
+                obstacles.Clear();
                 Grid_update();
             }
             else if(cond == 3)
             {
+                // Данная кондиция соответствует очистке поля
                 Btn_Up_1.Visible = false;
                 Btn_Down_1.Visible = false;
                 Btn_Left_1.Visible = false;

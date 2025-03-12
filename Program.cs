@@ -16,7 +16,7 @@ namespace Finding_the_shortest_route
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new Form1());
+            Application.Run(new Window());
         }
     }
 }
