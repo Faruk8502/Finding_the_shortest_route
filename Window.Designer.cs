@@ -289,6 +289,7 @@
             this.NumUpDwn_p2_y.Size = new System.Drawing.Size(37, 22);
             this.NumUpDwn_p2_y.TabIndex = 7;
             this.NumUpDwn_p2_y.ValueChanged += new System.EventHandler(this.NumUpDwn_ValueChanged);
+            this.NumUpDwn_p2_y.Enter += new System.EventHandler(this.NumUpDwn_Enter);
             this.NumUpDwn_p2_y.KeyDown += new System.Windows.Forms.KeyEventHandler(this.NumUpDwn_KeyDown);
             // 
             // Btn_Down_2
@@ -313,6 +314,7 @@
             this.NumUpDwn_p2_x.Size = new System.Drawing.Size(37, 22);
             this.NumUpDwn_p2_x.TabIndex = 6;
             this.NumUpDwn_p2_x.ValueChanged += new System.EventHandler(this.NumUpDwn_ValueChanged);
+            this.NumUpDwn_p2_x.Enter += new System.EventHandler(this.NumUpDwn_Enter);
             this.NumUpDwn_p2_x.KeyDown += new System.Windows.Forms.KeyEventHandler(this.NumUpDwn_KeyDown);
             // 
             // Btn_Up_2

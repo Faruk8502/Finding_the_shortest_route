@@ -25,9 +25,10 @@ namespace Finding_the_shortest_route
         int score = 0;
         Point point1 = new Point();
         Point point2 = new Point();
+        int lastCoordinate = 0;
         List<Point> obstacles = new List<Point>();
         List<Point> way = new List<Point>();
-
+        bool key = false;
         // Модуль инициализации
         public Window()
         {
@@ -35,6 +36,10 @@ namespace Finding_the_shortest_route
             this.DoubleBuffered = true;
             Clear_Data();
             this.ClientSize = new Size(625, 625);
+            NumUpDwn_p1_x.MouseWheel += Ctl_MouseWheel;
+            NumUpDwn_p1_y.MouseWheel += Ctl_MouseWheel;
+            NumUpDwn_p2_x.MouseWheel += Ctl_MouseWheel;
+            NumUpDwn_p2_y.MouseWheel += Ctl_MouseWheel;
 
             // Устанавливаем предел ползунков в минус, дабы скрыть точки
             NumUpDwn_p1_x.Minimum = -1;
@@ -174,24 +179,30 @@ namespace Finding_the_shortest_route
 
             }
             // Определяем какая клавиша джойстика нажата и корректируем перемещение с учётом препятствий
-            switch (button.Name)
+
+            Point_move(button.Name, numericUpDown1, numericUpDown2, tag);
+            
+        }
+        public void Point_move(string command, NumericUpDown numericUpDown1, NumericUpDown numericUpDown2, int tag)
+        {
+            switch (command)
             {
                 case string s when s.Contains("Up"):
-                    numericUpDown2.Value -= numericUpDown2.Value != numericUpDown2.Minimum? 
+                    numericUpDown2.Value -= numericUpDown2.Value != numericUpDown2.Minimum ?
                         Step_correct(tag, "Y", "-", 0, point1, point2, obstacles) : 0;
                     break;
                 case string s when s.Contains("Down"):
-                    numericUpDown2.Value += numericUpDown2.Value != numericUpDown2.Maximum?
-                        Step_correct(tag, "Y", "+", 
+                    numericUpDown2.Value += numericUpDown2.Value != numericUpDown2.Maximum ?
+                        Step_correct(tag, "Y", "+",
                         (int)numericUpDown2.Maximum, point1, point2, obstacles) : 0;
                     break;
                 case string s when s.Contains("Left"):
-                    numericUpDown1.Value -= numericUpDown1.Value != numericUpDown2.Minimum?
+                    numericUpDown1.Value -= numericUpDown1.Value != numericUpDown1.Minimum ?
                         Step_correct(tag, "X", "-", 0, point1, point2, obstacles) : 0;
                     break;
                 case string s when s.Contains("Right"):
-                    numericUpDown1.Value += numericUpDown1.Value != numericUpDown2.Maximum?
-                        Step_correct(tag, "X", "+", 
+                    numericUpDown1.Value += numericUpDown1.Value != numericUpDown1.Maximum ?
+                        Step_correct(tag, "X", "+",
                         (int)numericUpDown1.Maximum, point1, point2, obstacles) : 0;
                     break;
             }
@@ -231,9 +242,57 @@ namespace Finding_the_shortest_route
         }
         // Обработчик нажатия Enter при вводе координат в соответствующих полях
         private void NumUpDwn_KeyDown(object sender, KeyEventArgs e)
-        {
+       {
+
             if (e.KeyCode != Keys.Enter)
             {
+                if (e.KeyCode == Keys.Up || e.KeyCode == Keys.Down)
+                {
+                    e.Handled = true;
+                    NumericUpDown numericUpDown1 = sender as NumericUpDown;
+                    NumericUpDown numericUpDown2 = new NumericUpDown();
+                    Control parent = numericUpDown1.Parent;
+                    int tag = Convert.ToInt16(parent.Tag);
+                    foreach (Control control in parent.Controls)
+                    {
+                        if (control != numericUpDown1 & control is NumericUpDown)
+                        {
+                            numericUpDown2 = control as NumericUpDown;
+                        }
+
+                    }
+
+                    string command = null;
+                    if (numericUpDown1.Name.Contains("x"))
+                    {
+                        if(e.KeyCode == Keys.Up)
+                        {
+                            command = "Right";
+                        }
+                        else
+                        {
+                            command = "Left";
+                        }
+                        // Определяем какая клавиша джойстика нажата и корректируем перемещение с учётом препятствий
+                        Point_move(command, numericUpDown1, numericUpDown2, tag);
+                        numericUpDown1.Value += command == "Right" ? -1 : 1;
+                    }
+                    else
+                    {
+                        if (e.KeyCode == Keys.Up)
+                        {
+                            command = "Down";
+                        }
+                        else
+                        {
+                            command = "Up";
+                        }
+                        // Определяем какая клавиша джойстика нажата и корректируем перемещение с учётом препятствий
+                        Point_move(command, numericUpDown2, numericUpDown1, tag);
+                        numericUpDown1.Value += command == "Down" ? -1 : 1;
+                    }
+                }
+                key = true;
                 return;
             }
             else
@@ -246,6 +305,7 @@ namespace Finding_the_shortest_route
                 NumericUpDown numericUpDown1 = (NumericUpDown)sender;
                 NumericUpDown numericUpDown2 = new NumericUpDown();
                 Control parent = numericUpDown1.Parent;
+                Label_result.Text = null;
                 if (numericUpDown1.Value != -1)
                 {
                     foreach (Control control in parent.Controls)
@@ -259,16 +319,59 @@ namespace Finding_the_shortest_route
                     if (Convert.ToInt16(numericUpDown2.Tag) > 0)
                     {
                         numericUpDown2.Tag = "0";
+                        Point point = Check_error(point1, point2, (int)numericUpDown1.Value,
+                            Convert.ToInt16(parent.Tag), numericUpDown1.Location.Y, numericUpDown2.Location.Y);
+                        if (obstacles.Contains(point) == true)
+                        {
+                            Label_result.Text = "Некорректный ввод";
+                            numericUpDown1.Value = lastCoordinate;
+                        }
                         this.ActiveControl = null;
                     }
                     else
                     {
                         numericUpDown1.Tag = "1";
+                        Point point = Check_error(point1, point2, (int)numericUpDown1.Value,
+                            Convert.ToInt16(parent.Tag), numericUpDown1.Location.Y, numericUpDown2.Location.Y);
+                        if(obstacles.Contains(point) == true)
+                        {
+                            Label_result.Text = "Некорректный ввод";
+                            numericUpDown1.Value = lastCoordinate;
+                        }
                         numericUpDown2.Focus();
                     }
                 }
             }
         }
+        public static Point Check_error(Point point1, Point point2, int value, int tag, int location1, int location2)
+        {
+            Point point = new Point();
+            if (location1 > location2)
+            {
+                if (tag == 0)
+                {
+                    point = new Point(value, point1.X);
+                }
+                else
+                {
+                    point = new Point(value, point2.X);
+                }
+            }
+            else
+            {
+                if (tag == 0)
+                {
+                    point = new Point(value, point1.Y);
+                }
+                else
+                {
+                    point = new Point(value, point2.Y);
+                }
+            }
+            return point;
+        }
+
+
         // Модуль для отрисовки препятствий
         public void DrawObstacles(object sender, EventArgs e)
         {
@@ -422,5 +525,16 @@ namespace Finding_the_shortest_route
                 Points_manegment_lock(2);
             }
         }
+
+        private void NumUpDwn_Enter(object sender, EventArgs e)
+        {
+            NumericUpDown numericUpDown = sender as NumericUpDown;
+            lastCoordinate = Convert.ToInt16(numericUpDown.Value);
+        }
+        private void Ctl_MouseWheel(object sender, MouseEventArgs e)
+        {
+            ((HandledMouseEventArgs)e).Handled = true;
+        }
+
     }
 }
