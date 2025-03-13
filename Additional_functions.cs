@@ -44,5 +44,33 @@ namespace Finding_the_shortest_route
             point.Y = loc1 < loc2 ? val2 : val1;
             return point;
         }
+
+        public static Point Check_error(Point point1, Point point2, int value, int tag, int location1, int location2)
+        {
+            Point point = new Point();
+            if (location1 > location2)
+            {
+                if (tag == 0)
+                {
+                    point = new Point(point1.X, value);
+                }
+                else
+                {
+                    point = new Point(point2.X, value);
+                }
+            }
+            else
+            {
+                if (tag == 0)
+                {
+                    point = new Point(value, point1.Y);
+                }
+                else
+                {
+                    point = new Point(value, point2.Y);
+                }
+            }
+            return point;
+        }
     }
 }
