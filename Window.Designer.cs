@@ -103,7 +103,7 @@
             0,
             0});
             this.NumUpDwn_GridSize.ValueChanged += new System.EventHandler(this.NumUpDwn_GridSize_ValueChanged);
-            this.NumUpDwn_GridSize.KeyDown += new System.Windows.Forms.KeyEventHandler(this.NumUpDwn_GridSize_KeyDown);
+            this.NumUpDwn_GridSize.KeyDown += new System.Windows.Forms.KeyEventHandler(this.NumUpDwn_GridSize_Obs_KeyDown);
             // 
             // label1
             // 
@@ -148,9 +148,10 @@
             this.Btn_Right_1.Name = "Btn_Right_1";
             this.Btn_Right_1.Size = new System.Drawing.Size(23, 23);
             this.Btn_Right_1.TabIndex = 15;
+            this.Btn_Right_1.Tag = "x";
             this.Btn_Right_1.Text = "▶";
             this.Btn_Right_1.UseVisualStyleBackColor = true;
-            this.Btn_Right_1.Click += new System.EventHandler(this.Btn_Click);
+            this.Btn_Right_1.Click += new System.EventHandler(this.Joystick_Button_Click);
             // 
             // Btn_Left_1
             // 
@@ -158,9 +159,10 @@
             this.Btn_Left_1.Name = "Btn_Left_1";
             this.Btn_Left_1.Size = new System.Drawing.Size(23, 23);
             this.Btn_Left_1.TabIndex = 15;
+            this.Btn_Left_1.Tag = "x";
             this.Btn_Left_1.Text = "◀";
             this.Btn_Left_1.UseVisualStyleBackColor = true;
-            this.Btn_Left_1.Click += new System.EventHandler(this.Btn_Click);
+            this.Btn_Left_1.Click += new System.EventHandler(this.Joystick_Button_Click);
             // 
             // Btn_Down_1
             // 
@@ -168,9 +170,10 @@
             this.Btn_Down_1.Name = "Btn_Down_1";
             this.Btn_Down_1.Size = new System.Drawing.Size(23, 23);
             this.Btn_Down_1.TabIndex = 15;
+            this.Btn_Down_1.Tag = "y";
             this.Btn_Down_1.Text = "▼";
             this.Btn_Down_1.UseVisualStyleBackColor = true;
-            this.Btn_Down_1.Click += new System.EventHandler(this.Btn_Click);
+            this.Btn_Down_1.Click += new System.EventHandler(this.Joystick_Button_Click);
             // 
             // Btn_Up_1
             // 
@@ -178,9 +181,10 @@
             this.Btn_Up_1.Name = "Btn_Up_1";
             this.Btn_Up_1.Size = new System.Drawing.Size(23, 23);
             this.Btn_Up_1.TabIndex = 14;
+            this.Btn_Up_1.Tag = "y";
             this.Btn_Up_1.Text = "▲";
             this.Btn_Up_1.UseVisualStyleBackColor = true;
-            this.Btn_Up_1.Click += new System.EventHandler(this.Btn_Click);
+            this.Btn_Up_1.Click += new System.EventHandler(this.Joystick_Button_Click);
             // 
             // NumUpDwn_p1_y
             // 
@@ -194,8 +198,7 @@
             this.NumUpDwn_p1_y.Size = new System.Drawing.Size(40, 22);
             this.NumUpDwn_p1_y.TabIndex = 3;
             this.NumUpDwn_p1_y.ValueChanged += new System.EventHandler(this.NumUpDwn_ValueChanged);
-            this.NumUpDwn_p1_y.Enter += new System.EventHandler(this.NumUpDwn_Enter);
-            this.NumUpDwn_p1_y.KeyDown += new System.Windows.Forms.KeyEventHandler(this.NumUpDwn_KeyDown);
+            this.NumUpDwn_p1_y.KeyDown += new System.Windows.Forms.KeyEventHandler(this.NumericUpDown_KeyDown);
             // 
             // NumUpDwn_p1_x
             // 
@@ -209,8 +212,7 @@
             this.NumUpDwn_p1_x.Size = new System.Drawing.Size(40, 22);
             this.NumUpDwn_p1_x.TabIndex = 2;
             this.NumUpDwn_p1_x.ValueChanged += new System.EventHandler(this.NumUpDwn_ValueChanged);
-            this.NumUpDwn_p1_x.Enter += new System.EventHandler(this.NumUpDwn_Enter);
-            this.NumUpDwn_p1_x.KeyDown += new System.Windows.Forms.KeyEventHandler(this.NumUpDwn_KeyDown);
+            this.NumUpDwn_p1_x.KeyDown += new System.Windows.Forms.KeyEventHandler(this.NumericUpDown_KeyDown);
             // 
             // Label_P1_y
             // 
@@ -265,9 +267,10 @@
             this.Btn_Right_2.Name = "Btn_Right_2";
             this.Btn_Right_2.Size = new System.Drawing.Size(23, 23);
             this.Btn_Right_2.TabIndex = 17;
+            this.Btn_Right_2.Tag = "x";
             this.Btn_Right_2.Text = "▶";
             this.Btn_Right_2.UseVisualStyleBackColor = true;
-            this.Btn_Right_2.Click += new System.EventHandler(this.Btn_Click);
+            this.Btn_Right_2.Click += new System.EventHandler(this.Joystick_Button_Click);
             // 
             // Btn_Left_2
             // 
@@ -275,9 +278,10 @@
             this.Btn_Left_2.Name = "Btn_Left_2";
             this.Btn_Left_2.Size = new System.Drawing.Size(23, 23);
             this.Btn_Left_2.TabIndex = 18;
+            this.Btn_Left_2.Tag = "x";
             this.Btn_Left_2.Text = "◀";
             this.Btn_Left_2.UseVisualStyleBackColor = true;
-            this.Btn_Left_2.Click += new System.EventHandler(this.Btn_Click);
+            this.Btn_Left_2.Click += new System.EventHandler(this.Joystick_Button_Click);
             // 
             // NumUpDwn_p2_y
             // 
@@ -291,8 +295,7 @@
             this.NumUpDwn_p2_y.Size = new System.Drawing.Size(37, 22);
             this.NumUpDwn_p2_y.TabIndex = 7;
             this.NumUpDwn_p2_y.ValueChanged += new System.EventHandler(this.NumUpDwn_ValueChanged);
-            this.NumUpDwn_p2_y.Enter += new System.EventHandler(this.NumUpDwn_Enter);
-            this.NumUpDwn_p2_y.KeyDown += new System.Windows.Forms.KeyEventHandler(this.NumUpDwn_KeyDown);
+            this.NumUpDwn_p2_y.KeyDown += new System.Windows.Forms.KeyEventHandler(this.NumericUpDown_KeyDown);
             // 
             // Btn_Down_2
             // 
@@ -300,9 +303,10 @@
             this.Btn_Down_2.Name = "Btn_Down_2";
             this.Btn_Down_2.Size = new System.Drawing.Size(23, 23);
             this.Btn_Down_2.TabIndex = 19;
+            this.Btn_Down_2.Tag = "y";
             this.Btn_Down_2.Text = "▼";
             this.Btn_Down_2.UseVisualStyleBackColor = true;
-            this.Btn_Down_2.Click += new System.EventHandler(this.Btn_Click);
+            this.Btn_Down_2.Click += new System.EventHandler(this.Joystick_Button_Click);
             // 
             // NumUpDwn_p2_x
             // 
@@ -316,8 +320,7 @@
             this.NumUpDwn_p2_x.Size = new System.Drawing.Size(37, 22);
             this.NumUpDwn_p2_x.TabIndex = 6;
             this.NumUpDwn_p2_x.ValueChanged += new System.EventHandler(this.NumUpDwn_ValueChanged);
-            this.NumUpDwn_p2_x.Enter += new System.EventHandler(this.NumUpDwn_Enter);
-            this.NumUpDwn_p2_x.KeyDown += new System.Windows.Forms.KeyEventHandler(this.NumUpDwn_KeyDown);
+            this.NumUpDwn_p2_x.KeyDown += new System.Windows.Forms.KeyEventHandler(this.NumericUpDown_KeyDown);
             // 
             // Btn_Up_2
             // 
@@ -325,9 +328,10 @@
             this.Btn_Up_2.Name = "Btn_Up_2";
             this.Btn_Up_2.Size = new System.Drawing.Size(23, 23);
             this.Btn_Up_2.TabIndex = 16;
+            this.Btn_Up_2.Tag = "y";
             this.Btn_Up_2.Text = "▲";
             this.Btn_Up_2.UseVisualStyleBackColor = true;
-            this.Btn_Up_2.Click += new System.EventHandler(this.Btn_Click);
+            this.Btn_Up_2.Click += new System.EventHandler(this.Joystick_Button_Click);
             // 
             // Label_P2_x
             // 
@@ -391,7 +395,7 @@
             this.NumUpDwn_ObsNum.Name = "NumUpDwn_ObsNum";
             this.NumUpDwn_ObsNum.Size = new System.Drawing.Size(62, 22);
             this.NumUpDwn_ObsNum.TabIndex = 7;
-            this.NumUpDwn_ObsNum.KeyDown += new System.Windows.Forms.KeyEventHandler(this.NumUpDwn_GridSize_KeyDown);
+            this.NumUpDwn_ObsNum.KeyDown += new System.Windows.Forms.KeyEventHandler(this.NumUpDwn_GridSize_Obs_KeyDown);
             // 
             // Find_way_Button
             // 

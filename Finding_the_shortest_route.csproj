@@ -46,7 +46,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Additional_functions.cs" />
+    <Compile Include="Additional_functions_and_classes.cs" />
     <Compile Include="Find_way_algorithm.cs" />
     <Compile Include="Window.cs">
       <SubType>Form</SubType>

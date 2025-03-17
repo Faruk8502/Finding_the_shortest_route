@@ -15,7 +15,9 @@ using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.TextBox;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.ToolBar;
 using static Finding_the_shortest_route.Find_way_algorithm;
-using static Finding_the_shortest_route.Additional_functions;
+using static Finding_the_shortest_route.Additional_functions_and_classes;
+using static Finding_the_shortest_route.Action_params;
+using System.Security.Policy;
 
 namespace Finding_the_shortest_route
 {
@@ -25,32 +27,38 @@ namespace Finding_the_shortest_route
         int score = 0;
         Point point1 = new Point();
         Point point2 = new Point();
-        int lastCoordinate = 0;
         List<Point> obstacles = new List<Point>();
         List<Point> way = new List<Point>();
+        PointModel start_point = new PointModel();
+        PointModel end_point = new PointModel();
+        int Direction = 0;
 
         // Модуль инициализации
         public Window()
         {
             InitializeComponent();
+            // Связываем изменение координат с обновлением таблицы
+            start_point.PropertyChanged += PointModel_PropertyChanged;
+            end_point.PropertyChanged += PointModel_PropertyChanged;
+            //__________________________________________________________________
+            // Осуществляем привязку координат точек со значениями в полях
+            NumUpDwn_p1_x.DataBindings.Add("Value", start_point, "X", true, DataSourceUpdateMode.OnPropertyChanged);
+            NumUpDwn_p1_y.DataBindings.Add("Value", start_point, "Y", true, DataSourceUpdateMode.OnPropertyChanged);
+            NumUpDwn_p2_x.DataBindings.Add("Value", end_point, "X", true, DataSourceUpdateMode.OnPropertyChanged);
+            NumUpDwn_p2_y.DataBindings.Add("Value", end_point, "Y", true, DataSourceUpdateMode.OnPropertyChanged);
+
+            //__________________________________________________________________
             this.DoubleBuffered = true;
-            Clear_Data();
             this.ClientSize = new Size(625, 625);
             NumUpDwn_p1_x.MouseWheel += Ctl_MouseWheel;
             NumUpDwn_p1_y.MouseWheel += Ctl_MouseWheel;
             NumUpDwn_p2_x.MouseWheel += Ctl_MouseWheel;
             NumUpDwn_p2_y.MouseWheel += Ctl_MouseWheel;
 
-            // Устанавливаем предел ползунков в минус, дабы скрыть точки
-            NumUpDwn_p1_x.Minimum = -1;
-            NumUpDwn_p1_y.Minimum = -1;
-            NumUpDwn_p2_x.Minimum = -1;
-            NumUpDwn_p2_y.Minimum = -1;
-
-            // Удаление полей с Up/Down кнопаками для элементов NumericUpDown
+            // Удаление полей с Up/Down кнопками для элементов NumericUpDown
             int widthOfSpinButtons = NumUpDwn_p1_x.Controls[0].Width;
             NumUpDwn_p1_x.Controls[0].Dispose();
-            NumUpDwn_p1_x.Controls[0].MinimumSize = new Size(NumUpDwn_p1_x.Controls[0].Width + 
+            NumUpDwn_p1_x.Controls[0].MinimumSize = new Size(NumUpDwn_p1_x.Controls[0].Width +
                 widthOfSpinButtons, NumUpDwn_p1_x.Controls[0].MinimumSize.Height);
             NumUpDwn_p1_y.Controls[0].Dispose();
             NumUpDwn_p1_y.Controls[0].MinimumSize = new Size(NumUpDwn_p1_y.Controls[0].Width +
@@ -86,7 +94,188 @@ namespace Finding_the_shortest_route
             tableLayoutPanel1.Controls.Add(panel3, 1, 0);
 
         }
-        //______________________________________________________________________________________________________
+        // Обработчик события изменения координат
+        private void PointModel_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            // Вызываем функцию обновления сетки
+            Grid_update();
+        }
+        // Обработчик нажатия на клавиши джойстиков
+        private void Joystick_Button_Click(object sender, EventArgs e)
+        {
+            // Собираем данные для создания экземпляра класса с информацией о текущей точке
+            System.Windows.Forms.Button button = sender as System.Windows.Forms.Button;
+            Control parent = button.Parent;
+            NumericUpDown numericUpDown = new NumericUpDown();
+            foreach (Control control in parent.Controls)
+            {
+                if(control is NumericUpDown && control.Name.Contains(button.Tag.ToString()))
+                {
+                    numericUpDown = control as NumericUpDown;
+                }
+            }
+            // Определяем направление для предоставления информации обработчику изменения значения
+            Direction = button.Name.Contains("Up") || button.Name.Contains("Left") ? 2 : 1;
+
+            // Совершаем подразумевающийся шаг
+            numericUpDown.Value += Direction == 2 ? (numericUpDown.Value > 0? - 1 : 0) :
+                                                    (numericUpDown.Value < numericUpDown.Maximum? 1 : 0);
+        }
+        // Обработчик изменения значений в полях с координатами за счёт стрелок вверх/вниз либо
+        // вводом значения вручную
+        private void NumericUpDown_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode != Keys.Enter)
+            {
+                // Определяем направление для предоставления информации обработчику изменения значения
+                if (e.KeyCode == Keys.Up)
+                {
+                    Direction = 1;
+                }
+                else if (e.KeyCode == Keys.Down)
+                {
+                    Direction = 2;
+                }
+            }
+            else
+            {
+                // Остановка дальнейшей обработки события нажатия с целью предотвращения звукового сопровождения
+                e.SuppressKeyPress = true;
+
+                // Определяем в какое поле пользователь ввёл значение координаты,
+                // чтобы перевести фокус на другое поле
+                // Для этого получаем экземпляр текущего и экземпляр "другого" элемента NumericUpDown
+                NumericUpDown numericUpDown1 = (NumericUpDown)sender;
+                NumericUpDown numericUpDown2 = new NumericUpDown();
+                Control parent = numericUpDown1.Parent;
+                foreach (Control control in parent.Controls)
+                {
+                    if (control != numericUpDown1 & control is NumericUpDown)
+                    {
+                        numericUpDown2 = control as NumericUpDown;
+                    }
+
+                }
+                // Анализируем потенциальное перемещение точки по введённым пользователем значениям
+                // Если точка встанет на препятствие - возвращаем исходную координату
+                if (Convert.ToInt16(numericUpDown2.Tag) > 0)
+                {
+                    numericUpDown2.Tag = "0";
+                    // Определяем направление для предоставления информации обработчику изменения значения
+                    Direction = 1;
+                    this.ActiveControl = null;
+                }
+                else
+                {
+                    // Определяем направление для предоставления информации обработчику изменения значения
+                    Direction = 1;
+                    numericUpDown1.Tag = "1";
+                    numericUpDown2.Focus();
+                }
+            }
+        }
+        // Обработчик изменения значений координат в полях
+        private void NumUpDwn_ValueChanged(object sender, EventArgs e)
+        {
+            if (Direction == 0)
+            {
+                return;
+            }
+            //Очищаем найденный путь и вывод результата поиска
+            Label_result.Text = null;
+            way.Clear();
+
+            // Собираем необходимую информацию для создания экземпляра класса с информацией о текущей точке
+            NumericUpDown numericUpDown = sender as NumericUpDown;
+            Control parent = numericUpDown.Parent;
+            int tag = Convert.ToInt16(parent.Tag);
+            int coordinate = numericUpDown.Name.ToString().Contains("x") ? 0 : 1;
+            int direction = Direction == 1 ? 1 : 0;
+            (int X, int Y) = tag == 0 ? ((int)NumUpDwn_p1_x.Value, (int)NumUpDwn_p1_y.Value) :
+                ((int)NumUpDwn_p2_x.Value, (int)NumUpDwn_p2_y.Value);
+            Point new_point = new Point(X, Y);
+
+            // Создаём экземпляр класса с информацией о текущей точке
+            Action_params _Params = new Action_params()
+            {
+                Tag = tag,
+                Coordinate = coordinate,
+                Direction = direction,
+                Current_point = new_point,
+                Maximum = (int)NumUpDwn_GridSize.Value
+            };
+
+            // Корректируем шаг
+            Point corrected_point = Next_step_correct(_Params, obstacles);
+
+            numericUpDown.Value = coordinate == 0 ?
+                (corrected_point.X != -1 ? corrected_point.X :
+                                    (Direction == 1 ? numericUpDown.Value - 1 :
+                                                      numericUpDown.Value + 1)) :
+                corrected_point.Y != -1 ? corrected_point.Y :
+                                    (Direction == 1 ? numericUpDown.Value - 1 :
+                                                      numericUpDown.Value + 1);
+            Direction = 0;
+        }
+        // Обработчик изменения значения размера сетки
+        private void NumUpDwn_GridSize_ValueChanged(object sender, EventArgs e)
+        {
+            Grid_update();
+        }
+        //Обработчик изменения значения размера сетки и количества препятствий вручную
+        private void NumUpDwn_GridSize_Obs_KeyDown(object sender, KeyEventArgs e)
+        {
+            // Остановка дальнейшей обработки при нажатии клавиши Enter в элементах NumericUpDown
+            if (e.KeyCode == Keys.Enter)
+            {
+                e.SuppressKeyPress = true;
+            }
+        }
+        // Модуль для отрисовки препятствий
+        public void DrawObstacles(object sender, EventArgs e)
+        {
+            way.Clear();
+            obstacles.Clear();
+            Random random = new Random();
+            int obstacleCount = (int)NumUpDwn_ObsNum.Value;
+            int GridSize = Convert.ToInt16(NumUpDwn_GridSize.Value) == 0 ? 1 :
+                Convert.ToInt16(NumUpDwn_GridSize.Value);
+            while (obstacles.Count < obstacleCount)
+            {
+                // Генерация случайных координат
+                int x = random.Next(GridSize);
+                int y = random.Next(GridSize);
+                Point point = new Point(x, y);
+
+                Point point1 = new Point(start_point.X, start_point.Y);
+                Point point2 = new Point(end_point.X, end_point.Y);
+
+                // Проверка, что координаты не совпадают с начальной и конечной точками
+                if (point != point1 && point != point2 && !obstacles.Any(p => p == point))
+                {
+                    obstacles.Add(point); // Добавляем препятствие
+                }
+            }
+            Label_result.Text = null;
+            // Обновляем сетку
+            Grid_update();
+        }
+        // вызов алгоритма для поиска кратчайшего пути
+        private void Find_way_Button_Click(object sender, EventArgs e)
+        {
+            int GridSize = Convert.ToInt16(NumUpDwn_GridSize.Value) == 0 ? 1 :
+                Convert.ToInt16(NumUpDwn_GridSize.Value);
+            Point point1 = new Point(start_point.X, start_point.Y);
+            Point point2 = new Point(end_point.X, end_point.Y);
+            way = FindPath(obstacles, GridSize, point1, point2);
+            (Label_result.Text, Label_result.ForeColor) = way.Count() == 0 ? ("Путь не найден", Color.Tomato) : ("Путь найден!", Color.Green);
+            Grid_update();
+        }
+        // Обработчик нажатия клавиши для очистки поля
+        private void Clear_Button_Click(object sender, EventArgs e)
+        {
+            Clear_Data();
+        }
         // Модуль обновления сетки
         public void Grid_update()
         {
@@ -101,7 +290,7 @@ namespace Finding_the_shortest_route
             // предела, указанного в ТЗ
             NumUpDwn_ObsNum.Maximum = GridSize <= Math.Sqrt(2000) ? GridSize * GridSize - 2 : 2000;
 
-            // Адаптируем максимумы ползунков под текщий размер сетки
+            // Адаптируем максимумы ползунков под текущий размер сетки
             NumUpDwn_p1_x.Maximum = GridSize - 1;
             NumUpDwn_p1_y.Maximum = GridSize - 1;
             NumUpDwn_p2_x.Maximum = GridSize - 1;
@@ -133,237 +322,19 @@ namespace Finding_the_shortest_route
                 g.FillRectangle(brush, x + 1, y + 1, cellSize, cellSize);
             }
 
-            brush = new SolidBrush(Color.Green); // Зеленый цвет для начальной точки
+            brush = new SolidBrush(Color.White);
 
-            g.FillEllipse(brush, point1.X * cellSize, point1.Y * cellSize, cellSize, cellSize);
+            g.FillEllipse(brush, start_point.X * cellSize, start_point.Y * cellSize, cellSize, cellSize);
 
-            brush = new SolidBrush(Color.Blue);   // Синий цвет для конечной точки
+            Pen pen1 = new Pen(Color.Black);
+            g.DrawEllipse(pen1, start_point.X * cellSize, start_point.Y * cellSize, cellSize, cellSize);
 
-            g.FillEllipse(brush, point2.X * cellSize, point2.Y * cellSize, cellSize, cellSize);
+            brush = new SolidBrush(Color.Black);
+
+            g.FillEllipse(brush, end_point.X * cellSize, end_point.Y * cellSize, cellSize, cellSize);
         }
-        private void NumUpDwn_GridSize_KeyDown(object sender, KeyEventArgs e)
-        {
-            // Остановка дальнейшей обработки при нажатии клавиши Enter в элементах NumericUpDown
-            if (e.KeyCode == Keys.Enter)
-            {
-                e.SuppressKeyPress = true;
-            }
-        }
-        // Обработчик изменения значения размера сетки
-        private void NumUpDwn_GridSize_ValueChanged(object sender, EventArgs e)
-        {
-            Grid_update();
-        }
-        // Обработчик нажатия на клавиши со стрелками (джойстик)
-        private void Btn_Click(object sender, EventArgs e)
-        {
-            System.Windows.Forms.Button button = sender as System.Windows.Forms.Button;
-            Control parent = button.Parent;
-            int tag = Convert.ToInt16(parent.Tag);
-            NumericUpDown numericUpDown1 = new NumericUpDown();
-            NumericUpDown numericUpDown2 = new NumericUpDown();
-            foreach (Control control in parent.Controls)
-            {
-                if (control is NumericUpDown & control.Name.Contains("x"))
-                {
-                    numericUpDown1 = control as NumericUpDown;
-                }
-                else if(control is NumericUpDown & control.Name.Contains("y"))
-                {
-                    numericUpDown2 = control as NumericUpDown;
-                }
-
-            }
-            // Определяем какая клавиша джойстика нажата и корректируем перемещение с учётом препятствий
-
-            Point_move(button.Name, numericUpDown1, numericUpDown2, tag);
-            
-        }
-        // Функция для изменения значения поля с координатой с учётом расположения препятствий
-        public void Point_move(string command, NumericUpDown numericUpDown1, NumericUpDown numericUpDown2, int tag)
-        {
-            // виртуальное перемщение точки с корректировкой количества шагов по расплажению
-            // препятствий для определение конечного положения реальной точки
-            switch (command)
-            {
-                case string s when s.Contains("Up"):
-                    numericUpDown2.Value -= numericUpDown2.Value != numericUpDown2.Minimum ?
-                        Step_correct(tag, "Y", "-", 0, point1, point2, obstacles) : 0;
-                    break;
-                case string s when s.Contains("Down"):
-                    numericUpDown2.Value += numericUpDown2.Value != numericUpDown2.Maximum ?
-                        Step_correct(tag, "Y", "+",
-                        (int)numericUpDown2.Maximum, point1, point2, obstacles) : 0;
-                    break;
-                case string s when s.Contains("Left"):
-                    numericUpDown1.Value -= numericUpDown1.Value != numericUpDown1.Minimum ?
-                        Step_correct(tag, "X", "-", 0, point1, point2, obstacles) : 0;
-                    break;
-                case string s when s.Contains("Right"):
-                    numericUpDown1.Value += numericUpDown1.Value != numericUpDown1.Maximum ?
-                        Step_correct(tag, "X", "+",
-                        (int)numericUpDown1.Maximum, point1, point2, obstacles) : 0;
-                    break;
-            }
-        }
-        // Обработчик нажатия Enter при вводе координат в соответствующих полях
-        private void NumUpDwn_KeyDown(object sender, KeyEventArgs e)
-       {
-
-            if (e.KeyCode != Keys.Enter)
-            {
-                if (e.KeyCode == Keys.Up || e.KeyCode == Keys.Down)
-                {
-                    // Получаем экземпляр текущего и экземпляр "другого" элемента NumericUpDown
-                    e.Handled = true;
-                    NumericUpDown numericUpDown1 = sender as NumericUpDown;
-                    NumericUpDown numericUpDown2 = new NumericUpDown();
-                    Control parent = numericUpDown1.Parent;
-                    int tag = Convert.ToInt16(parent.Tag);
-                    foreach (Control control in parent.Controls)
-                    {
-                        if (control != numericUpDown1 & control is NumericUpDown)
-                        {
-                            numericUpDown2 = control as NumericUpDown;
-                        }
-
-                    }
-
-                    string command = null;
-                    if (numericUpDown1.Name.Contains("x"))
-                    {
-                        command = e.KeyCode == Keys.Up ? "Right" : "Left";
-
-                        // Определяем какая клавиша джойстика нажата и корректируем перемещение с учётом препятствий
-                        Point_move(command, numericUpDown1, numericUpDown2, tag);
-                        numericUpDown1.Value += command == "Right" ? -1 : 1;
-                    }
-                    else
-                    {
-                        command = e.KeyCode == Keys.Up ? "Down" : "Up";
-
-                        // Определяем какая клавиша джойстика нажата и корректируем перемещение с учётом препятствий
-                        Point_move(command, numericUpDown2, numericUpDown1, tag);
-                        numericUpDown1.Value += command == "Down" ? -1 : 1;
-                    }
-                }
-            }
-            else
-            {
-                // Остановка дальнейшей обработки события нажатия с целью предотвращения звукого сопровождения
-                e.SuppressKeyPress = true;
-
-                // Определяем в какое поле пользователь ввёл значение координаты,
-                // чтобы перевести фокус на другое поле
-                // Для этого получаем экземпляр текущего и экземпляр "другого" элемента NumericUpDown
-                NumericUpDown numericUpDown1 = (NumericUpDown)sender;
-                NumericUpDown numericUpDown2 = new NumericUpDown();
-                Control parent = numericUpDown1.Parent;
-                foreach (Control control in parent.Controls)
-                {
-                    if (control != numericUpDown1 & control is NumericUpDown)
-                    {
-                        numericUpDown2 = control as NumericUpDown;
-                    }
-
-                }
-                Label_result.Text = null;
-                // Анализируем потенциальное перемещение точки по введёным пользователем значениям
-                // Если точка встанет на препятствие - возращаем исходную координату
-                if (Convert.ToInt16(numericUpDown2.Tag) > 0)
-                {
-                    numericUpDown2.Tag = "0";
-                    Point point = Check_error(point1, point2, (int)numericUpDown1.Value,
-                        Convert.ToInt16(parent.Tag), numericUpDown1.Location.Y, numericUpDown2.Location.Y);
-                    if (obstacles.Contains(point) == true)
-                    {
-                        numericUpDown1.Value = lastCoordinate;
-                    }
-                    this.ActiveControl = null;
-                }
-                else
-                {
-                    numericUpDown1.Tag = "1";
-                    Point point = Check_error(point1, point2, (int)numericUpDown1.Value,
-                        Convert.ToInt16(parent.Tag), numericUpDown1.Location.Y, numericUpDown2.Location.Y);
-                    if (obstacles.Contains(point) == true)
-                    {
-                        numericUpDown1.Value = lastCoordinate;
-                    }
-                    numericUpDown2.Focus();
-                }
-            }
-        }
-
-        // Модуль для отрисовки препятствий
-        public void DrawObstacles(object sender, EventArgs e)
-        {
-            way.Clear();
-            obstacles.Clear();
-            Random random = new Random();
-            int obstacleCount = (int)NumUpDwn_ObsNum.Value;
-            int GridSize = Convert.ToInt16(NumUpDwn_GridSize.Value) == 0 ? 1 :
-                Convert.ToInt16(NumUpDwn_GridSize.Value);
-            while (obstacles.Count < obstacleCount)
-            {
-                // Генерация случайных координат
-                int x = random.Next(GridSize);
-                int y = random.Next(GridSize);
-                Point point = new Point(x, y);
-
-                // Проверка, что координаты не совпадают с начальной и конечной точками
-                if (point != point1 && point != point2 && !obstacles.Any(p=>p==point))
-                {
-                    obstacles.Add(point); // Добавляем препятствие
-                }
-            }
-            Label_result.Text = null;
-            // Обновляем сетку
-            Grid_update();
-        }
-        // Обработчик изменения значений координат в полях
-        private void NumUpDwn_ValueChanged(object sender, EventArgs e)
-        {
-            NumericUpDown numericUpDown1 = (NumericUpDown)sender;
-            NumericUpDown numericUpDown2 = new NumericUpDown();
-            Control parent = numericUpDown1.Parent;
-            foreach (Control control in parent.Controls)
-            {
-                if (control != numericUpDown1 & control is NumericUpDown)
-                {
-                    numericUpDown2 = control as NumericUpDown;
-                }
-
-            }
-            int tag = Convert.ToInt16(parent.Tag);
-            int location1 = numericUpDown1.Location.Y;
-            int location2 = numericUpDown2.Location.Y;
-            int value1 = (int)numericUpDown1.Value;
-            int value2 = (int)numericUpDown2.Value;
-            // Синхронизация координат точек с коордиантами в полях
-            if (tag == 0)
-            {
-                point1 = Point_synchronization(point1, location1, location2, value1, value2);
-            }
-            else
-            {
-                point2 = Point_synchronization(point2, location1, location2, value1, value2);
-            }
-            Label_result.Text = null;
-            // Сбрасываем найденный путь
-            way.Clear();
-            // Обновляем сетку
-            Grid_update();
-        }
-        private void Find_way_Button_Click(object sender, EventArgs e)
-        {
-            int GridSize = Convert.ToInt16(NumUpDwn_GridSize.Value) == 0 ? 1 :
-                Convert.ToInt16(NumUpDwn_GridSize.Value);
-            way = FindPath(obstacles, GridSize, point1, point2);
-            (Label_result.Text, Label_result.ForeColor) = way.Count() == 0 ? ("Путь не найден", Color.Tomato) : ("Путь найден!", Color.Green);
-            Grid_update();
-        }
-        private void Clear_Button_Click(object sender, EventArgs e)
+        // Обновление таблицы при загрузке формы
+        private void Form1_Shown(object sender, EventArgs e)
         {
             Clear_Data();
         }
@@ -392,6 +363,10 @@ namespace Finding_the_shortest_route
             // Устанавливаем соответствующую этапу работы программы кондицию
             Points_manegment_lock(3);
         }
+        private void Ctl_MouseWheel(object sender, MouseEventArgs e)
+        {
+            ((HandledMouseEventArgs)e).Handled = true;
+        }
         // Модуль для перехода в разные этапы работы программы
         private void Points_manegment_lock(int cond)
         {
@@ -417,7 +392,7 @@ namespace Finding_the_shortest_route
                 obstacles.Clear();
                 Grid_update();
             }
-            else if(cond == 2)
+            else if (cond == 2)
             {
                 // Данная кондиция соответствует добавлению второй точки
                 Btn_Up_2.Visible = true;
@@ -431,13 +406,13 @@ namespace Finding_the_shortest_route
                 NumUpDwn_p2_y.Visible = true;
                 NumUpDwn_p2_x.Minimum = 0;
                 NumUpDwn_p2_y.Minimum = 0;
-                Btn_p2_lock.Visible=false;
+                Btn_p2_lock.Visible = false;
                 NumUpDwn_p2_x.Value = point2.X = (int)NumUpDwn_p2_x.Maximum;
                 NumUpDwn_p2_y.Value = point2.Y = (int)NumUpDwn_p2_x.Maximum;
                 obstacles.Clear();
                 Grid_update();
             }
-            else if(cond == 3)
+            else if (cond == 3)
             {
                 // Данная кондиция соответствует очистке поля
                 Btn_Up_1.Visible = false;
@@ -463,11 +438,6 @@ namespace Finding_the_shortest_route
             }
 
         }
-        // Обновление таблицы при загрузке формы
-        private void Form1_Shown(object sender, EventArgs e)
-        {
-            Grid_update();
-        }
         // Обработчик нажатия на кнопки для добавления точек
         private void Btn_lock_Click(object sender, EventArgs e)
         {
@@ -481,17 +451,5 @@ namespace Finding_the_shortest_route
                 Points_manegment_lock(2);
             }
         }
-        // Сохранение предыдущего значения координаты, в случае если
-        // точка встанет на препятствие при вводе через Enter
-        private void NumUpDwn_Enter(object sender, EventArgs e)
-        {
-            NumericUpDown numericUpDown = sender as NumericUpDown;
-            lastCoordinate = Convert.ToInt16(numericUpDown.Value);
-        }
-        private void Ctl_MouseWheel(object sender, MouseEventArgs e)
-        {
-            ((HandledMouseEventArgs)e).Handled = true;
-        }
-
     }
 }
